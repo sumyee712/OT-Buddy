@@ -349,7 +349,6 @@
 <div class="card">
     <div style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-align: center;">
         <span>🚀 OT-Buddy 智適樂 (DEMO 示範版)</span>
-        <span style="background: #e65100; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px;">臨床概念驗證</span>
     </div>
     <div class="resident-selector-bar">
         <span>👤 訓練宿友：
@@ -504,23 +503,24 @@
 
     <button class="btn-primary" style="background-color: #8e24aa; margin-bottom: 12px;" onclick="generateABCSuggestion()">💡 產生 OT 個人化介入建議</button>
 
-    <!-- C: 介入 Consequence & OT 策略卡片 (整合顯示與輔助工具) -->
-    <div id="abcResultArea" style="display: none; background: white; padding: 15px; border-radius: 16px; border: 3px solid #8e24aa; position: relative; text-align: left;">
-        <h4 style="margin: 0 0 8px 0; color: #4a148c; font-size: 17px; text-align: center;">🎯 【C 介入】OT 個人化建議策略</h4>
-        
-        <div id="personalStrategyBox" style="background: #f3e5f5; padding: 10px; border-radius: 10px; font-weight: bold; color: #4a148c; margin-bottom: 10px; font-size: 15px;">
-            <!-- 動態帶入宿友專屬策略 -->
-        </div>
+   <!-- C: 介入 Consequence & OT 策略卡片 -->
+        <div id="abcResultArea" style="display: none; background: white; padding: 15px; border-radius: 16px; border: 3px solid #8e24aa; position: relative; text-align: left;">
+            <h4 style="margin: 0 0 8px 0; color: #4a148c; font-size: 17px; text-align: center;">🎯 【C 介入】OT 個人化建議策略</h4>
+            
+            <div id="personalStrategyBox" style="background: #f3e5f5; padding: 10px; border-radius: 10px; font-weight: bold; color: #4a148c; margin-bottom: 10px; font-size: 15px;">
+                <!-- 動態帶入宿友專屬策略 -->
+            </div>
 
-        <!-- 輔助工具：僅在偏好為深呼吸時動態顯示 -->
-        <div id="breathingToolBox" style="display: none; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px;">
-            <p style="margin: 5px 0; font-weight: bold; color: #7b1fa2;">輔助工具：深呼吸節奏導引</p>
-            <div id="breathingCircle"></div>
-            <button class="btn-hint" style="background-color: #ab47bc; margin-top: 5px;" onclick="toggleBreathingAnimation()">⏯️ 開始/停止深呼吸導引</button>
-        </div>
+            <!-- 精簡版：靜觀放鬆影片輔助工具 -->
+            <div id="breathingToolBox" style="display: none; text-align: center; border-top: 1px dashed #ccc; padding-top: 10px; margin-top: 10px;">
+                <p style="margin: 5px 0 8px; font-weight: bold; color: #7b1fa2;">🎥 輔助工具：靜觀放鬆影片</p>
+                <div style="width: 100%; height: 200px; border-radius: 12px; overflow: hidden; border: 2px solid #ab47bc;">
+                    <iframe id="relaxVideoFrame" width="100%" height="100%" src="https://www.youtube.com/embed/MoS-CXf1Vh8" title="Mindfulness Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
 
-        <button class="btn-next" style="background-color: #4caf50; margin-top: 12px;" onclick="logABCRecord()">✅ 完成介入並記錄至 Log</button>
-    </div>
+            <button class="btn-next" style="background-color: #4caf50; margin-top: 12px;" onclick="logABCRecord()">✅ 完成介入並記錄至 Log</button>
+        </div>
 </div>
 
     <div id="mode4Container" style="display: none;">
@@ -598,66 +598,68 @@
 </div>
 
 <script>
-    // 1. 重置放鬆/ABC 模式
-function resetRelaxMode() {
-    document.getElementById('abcResultArea').style.display = 'none';
-    document.getElementById('breathingCircle').style.display = 'none';
-    isBreathingActive = false;
-    window.speechSynthesis.cancel();
-    clearInterval(breathingInterval);
-}
+// 根據前因、行為與宿友個人設定，生成 OT 策略建議
+    function generateABCSuggestion() {
+        var resultArea = document.getElementById('abcResultArea');
+        var strategyBox = document.getElementById('personalStrategyBox');
+        var videoBox = document.getElementById('breathingToolBox');
 
-// 2. 根據 A/B 及宿友 OT 偏好生成 C 介入建議
-function generateABCSuggestion() {
-    var resultArea = document.getElementById('abcResultArea');
-    var strategyBox = document.getElementById('personalStrategyBox');
-    var breathingBox = document.getElementById('breathingToolBox');
+        resultArea.style.display = 'block';
+        
+        var currentRes = residents.find(r => r.id === currentResidentId);
+        var pref = currentRes ? (currentRes.relaxPref || 'breathing') : 'breathing';
 
-    resultArea.style.display = 'block';
-    
-    // 取得當前宿友與其 OT 偏好
-    var currentRes = residents.find(r => r.id === currentResidentId);
-    var pref = currentRes ? (currentRes.relaxPref || 'breathing') : 'breathing';
+        var strategyText = "";
+        
+        // 根據 OT 個人化偏好給予核心建議
+        if (pref === 'breathing') {
+            strategyText = "1. 引導至安靜角落<br>2. 播放下方靜觀影片，進行 3 分鐘視覺放鬆<br>3. 用簡短字句溝通";
+            videoBox.style.display = 'block'; // 顯示影片
+        } else if (pref === 'vest') {
+            strategyText = "1. 提供加重背心/重力抱枕 (提供本體感)<br>2. 調暗燈光，減少環境視聽刺激<br>3. 暫停當前工作";
+            videoBox.style.display = 'none';
+        } else if (pref === 'music') {
+            strategyText = "1. 播放宿友喜愛的平緩音樂<br>2. 保持 1 米社交距離，避免強迫肢體接觸<br>3. 給予自主選擇權";
+            videoBox.style.display = 'none';
+        } else if (pref === 'tactile') {
+            strategyText = "1. 提供觸覺紓壓物件 (如豆豆袋/觸覺球)<br>2. 協助坐下，提供安全空間<br>3. 溫和口頭安撫";
+            videoBox.style.display = 'none';
+        }
 
-    var strategyText = "";
-    
-    // 根據 OT 個人化偏好給予核心建議
-    if (pref === 'breathing') {
-        strategyText = "1. 引導至安靜角落<br>2. 執行 3 分鐘深呼吸導引<br>3. 用簡短字句溝通";
-        breathingBox.style.display = 'block'; // 顯示深呼吸動畫工具
-    } else if (pref === 'vest') {
-        strategyText = "1. 提供加重背心/重力抱枕 (提供本體感)<br>2. 調暗燈光，減少環境視聽刺激<br>3. 暫停當前工作";
-        breathingBox.style.display = 'none';
-    } else if (pref === 'music') {
-        strategyText = "1. 播放宿友喜愛的平緩音樂<br>2. 保持 1 米社交距離，避免強迫肢體接觸<br>3. 給予自主選擇權";
-        breathingBox.style.display = 'none';
-    } else if (pref === 'tactile') {
-        strategyText = "1. 提供觸覺紓壓物件 (如豆豆袋/觸覺球)<br>2. 協助坐下，提供安全空間<br>3. 溫和口頭安撫";
-        breathingBox.style.display = 'none';
+        if (currentRes) {
+            strategyBox.innerHTML = "👤 宿友【" + currentRes.name + "】專屬 OT 策略：<br><br>" + strategyText;
+            speakCantonese("建議為" + currentRes.name + "執行 OT 放鬆策略");
+        } else {
+            strategyBox.innerHTML = "⚠️ 當前為公共模式，顯示標準 OT 策略：<br><br>" + strategyText;
+            speakCantonese("請參考 OT 放鬆策略提示");
+        }
     }
 
-    if (currentRes) {
-        strategyBox.innerHTML = "👤 宿友【" + currentRes.name + "】專屬 OT 策略：<br><br>" + strategyText;
-        speakCantonese("建議為" + currentRes.name + "執行 OT 放鬆策略");
-    } else {
-        strategyBox.innerHTML = "⚠️ 當前為公共模式，顯示標準 OT 策略：<br><br>" + strategyText;
-        speakCantonese("請參考 OT 放鬆策略提示");
-    }
-}
+    // 紀錄 ABC 行為分析結果
+    function logABCRecord() {
+        if (currentResidentId === 'public') {
+            return alert("⚠️ 請先在頂部選取一位「訓練宿友」，才能儲存 ABC 行為記錄。");
+        }
 
-// 3. 深呼吸動畫手動開關控制
-var isBreathingActive = false;
-function toggleBreathingAnimation() {
-    var circle = document.getElementById('breathingCircle');
-    if (!isBreathingActive) {
-        circle.style.display = 'block';
-        startBreathingAnimation();
-        isBreathingActive = true;
-    } else {
-        circle.style.display = 'none';
-        clearInterval(breathingInterval);
+        var antecedent = document.getElementById('abcAntecedent').value;
+        var behavior = document.getElementById('abcBehavior').value;
+        
+        var logItem = "ABC行為記錄";
+        var logDetail = "前因:" + antecedent + " | 行為:" + behavior;
+
+        saveTrainLog(logItem, "OT策略介入", logDetail);
+        
+        triggerConfetti();
+        alert("✅ ABC 記錄已成功儲存！\n前線可於【4. 紀錄】頁面查閱或匯出 CSV。");
+        
+        // 重置放鬆模式
+        document.getElementById('abcResultArea').style.display = 'none';
+    }
+
+    // 切換 Mode 時乾淨重置
+    function resetRelaxMode() {
+        document.getElementById('abcResultArea').style.display = 'none';
         window.speechSynthesis.cancel();
-        isBreathingActive = false;
     }
 }
     // 新增：導出當前宿友紀錄為 CSV (支援中文字碼 BOM)
