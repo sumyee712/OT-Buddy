@@ -434,6 +434,14 @@
                 <div class="aac-emoji">🤒</div>
                 <div class="aac-label">唔舒服</div>
             </div>
+            <div class="aac-card" onclick="triggerAAC('我想休息一下', '🛌')">
+                <div class="aac-emoji">🛌</div>
+                <div class="aac-label">想休息</div>
+            </div>
+            <div class="aac-card" onclick="triggerAAC('我好開心', '😊')">
+                <div class="aac-emoji">😊</div>
+                <div class="aac-label">好開心</div>
+            </div>
         </div>
         <div class="hint-box" id="aacSpeechBox" style="margin-top: 15px;">點擊上方圖卡發聲</div>
     </div>
@@ -532,7 +540,6 @@
 <div class="modal" id="addModal">
     <div class="modal-content">
         <h3 style="margin-top:0;">新增宿舍真實相片題目</h3>
-        <p style="font-size: 13px; color: #666; margin-top: 0;">注意：LocalStorage 容量有限，請勿上傳過多高畫質相片。</p>
         <label>1. 選擇照片（拍照或相簿）：</label>
         <input type="file" id="customImageInput" accept="image/*">
         
@@ -605,8 +612,8 @@
     
     // 影片 ADL 連結 (Mode 3)
     var adlVideos = {
-        brush_video: "https://www.youtube.com/embed/SshMof_zZ94?si=r7kK6y7yI9A2fB2i", // 網上刷牙歌範例
-        wash_video: "https://www.youtube.com/embed/AswF8D34G_o?si=hC7O3X2_M2W5D_C_"  // 網上洗手範例
+        brush_video: "https://www.youtube.com/watch?v=-GcCb6d6PIA", // 網上刷牙歌範例
+        wash_video: "https://www.youtube.com/watch?v=h7z9Z41azuk"  // 網上洗手範例
     };
 
     var rawQuestions = [];
