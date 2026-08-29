@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>話在心頭 (Speak My Mind) - 智障宿舍臨床輔助平台</title>
+
+    <meta name="theme-color" content="#4CAF50">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            padding: 20px;
+            text-align: center;
+            max-width: 550px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* --- 新增：頂部宿友選擇列 --- */
+        .resident-selector-bar {
+            background: #455a64;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .resident-selector-bar select {
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: white;
+            color: #333;
+            outline: none;
+        }
+        .manage-btn {
+            background-color: #607d8b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 頂部模式導覽 */
+        .mode-nav {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 12px;
+            background: #f1f3f5;
+            padding: 6px;
+            border-radius: 16px;
+            flex-wrap: wrap; /* 支援多個 Mode 折行 */
+        }
+        .mode-btn {
+            flex: 1;
+            min-width: 80px; /* 確保按鈕有一定寬度 */
+            padding: 10px 4px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-btn.active {
+            background: #4CAF50;
+            color: white;
+            box-shadow: 0 4px 8px rgba(76,175,80,0.3);
+        }
+
+        /* 集星計數列 */
+        .star-bar {
+            background: #fff8e1;
+            border: 2px solid #ffe082;
+            border-radius: 16px;
+            padding: 8px 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #f57f17;
+        }
+
+        .filter-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+            justify-content: center;
+        }
+        select.filter-select {
+            padding: 8px 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 12px;
+            border: 2px solid #ccc;
+            background-color: #fff;
+            outline: none;
+        }
+        
+        /* 圖示與謎題遮罩區塊 */
+        .puzzle-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto 12px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #4CAF50;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+        }
+        .image-container {
+            width: 100%;
+            height: 100%;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            object-fit: cover;
+        }
+        .puzzle-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 2px;
+            background: transparent;
+            pointer-events: none;
+        }
+        .puzzle-piece {
+            background: #ffb74d;
+            border: 1px solid #ffa726;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .puzzle-piece.revealed {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .hint-box {
+            min-height: 55px;
+            margin: 10px 0;
+            padding: 10px 14px;
+            background-color: #eef7ff;
+            border-radius: 14px;
+            color: #0056b3;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.3;
+        }
+        .heard-box {
+            font-size: 15px;
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 6px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            min-height: 22px;
+            word-break: break-all;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button {
+            border: none;
+            padding: 14px 18px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            touch-action: manipulation;
+        }
+        button:active { transform: scale(0.95); }
+        
+        .btn-primary { 
+            background-color: #4CAF50; 
+            color: white; 
+            width: 100%; 
+            font-size: 20px; 
+            padding: 16px;
+            box-shadow: 0 4px 10px rgba(76,175,80,0.3);
+        }
+        .btn-reveal { background-color: #ff9800; color: white; flex: 1; min-width: 100px; }
+        .btn-hint { background-color: #0288d1; color: white; flex: 1; min-width: 90px; }
+        .btn-manual { background-color: #8e24aa; color: white; flex: 1; min-width: 90px; }
+        .btn-next { background-color: #26a69a; color: white; width: 100%; margin-top: 6px; font-size: 18px; }
+        .btn-add { background-color: #6d4c41; color: white; margin-top: 12px; font-size: 15px; width: 100%; border-radius: 14px; }
+        .btn-clear { background-color: #e91e63; color: white; margin-top: 8px; font-size: 13px; padding: 6px 12px; border-radius: 10px; }
+        
+        button.mic-active {
+            background-color: #f44336;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0= { transform: scale(1); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+        .status { margin-top: 10px; font-size: 13px; color: #666; }
+
+        /* 彈窗樣式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 20px;
+            width: 85%;
+            max-width: 400px;
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h3 { margin-top: 0; color: #333; }
+        .modal-content label { font-weight: bold; color: #555; display: block; margin-top: 10px; }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 12px;
+            margin: 6px 0 12px;
+            box-sizing: border-box;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .aac-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+            margin-top: 10px;
+        }
+        .aac-card {
+            background: #ffffff;
+            border: 4px solid #e0e0e0;
+            border-radius: 20px;
+            padding: 18px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .aac-card:active {
+            transform: scale(0.93);
+            background-color: #e8f5e9;
+            border-color: #4CAF50;
+        }
+        .aac-emoji { font-size: 60px; margin-bottom: 6px; }
+        .aac-label { font-size: 20px; font-weight: bold; color: #2c3e50; }
+
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .log-table th, .log-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .log-table th { background-color: #f2f2f2; }
+
+        .badge-popup {
+            display: none;
+            position: fixed;
+            top: 20%; left: 10%; right: 10%;
+            background: #fff3cd;
+            border: 4px solid #ffc107;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 150;
+            animation: bounceIn 0.6s ease;
+            text-align: center;
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- 新增：Mode 5 深呼吸圓圈動畫 --- */
+        #breathingCircle {
+            width: 120px; height: 120px;
+            background-color: #ab47bc;
+            border-radius: 50%;
+            margin: 20px auto;
+            transition: transform 4s ease-in-out; /* 動態核心：4秒擴張 */
+            display: none; /* 初始隱藏 */
+            box-shadow: 0 0 20px rgba(171,71,188,0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="resident-selector-bar">
+        <span>👤 訓練宿友：
+            <select id="currentResidentSelect" onchange="changeCurrentResident()">
+                <option value="public">--- 公共模式 ---</option>
+                </select>
+        </span>
+        <button class="manage-btn" onclick="openResidentModal()">⚙️ 管理</button>
+    </div>
+
+    <div class="mode-nav">
+        <button class="mode-btn active" id="btnMode1" onclick="switchMode(1)">1. 猜猜看</button>
+        <button class="mode-btn" id="btnMode2" onclick="switchMode(2)">2. AAC</button>
+        <button class="mode-btn" id="btnMode3" onclick="switchMode(3)">3. ADL訓練</button>
+        <button class="mode-btn" id="btnMode5" onclick="switchMode(5)">5. 放鬆</button> <button class="mode-btn" id="btnMode4" onclick="switchMode(4)">4. 紀錄</button>
+    </div>
+
+    <div id="mode1Container">
+        <div class="star-bar">
+            <span>⭐星星：<span id="starCount">0</span> 顆</span>
+            <span id="badgeTitle" style="font-size: 15px;">🏅 命名新手</span>
+        </div>
+
+        <div class="filter-container">
+            <select id="gradeSelect" class="filter-select" onchange="changeGrade()">
+                <option value="1">等級 1：看圖認物</option>
+                <option value="2" selected>等級 2：拼圖猜猜</option>
+            </select>
+
+            <select id="categorySelect" class="filter-select" onchange="filterQuestions()">
+                <option value="all">所有類別</option>
+                <option value="custom">📷 宿舍自訂</option>
+                <option value="food">飲食水果</option>
+                <option value="daily">生活用品</option>
+            </select>
+        </div>
+
+        <h2 style="margin: 0 0 8px; font-size: 19px; color: #2c3e50;">🔍 猜猜看，呢個係咩嚟？</h2>
+        
+        <div class="puzzle-wrapper">
+            <img id="displayImage" class="image-container" src="" alt="訓練圖片" style="display:none;">
+            <div id="displayEmoji" class="image-container">🪥</div>
+            
+            <div class="puzzle-overlay" id="puzzleOverlay">
+                <div class="puzzle-piece" id="piece0">❓</div>
+                <div class="puzzle-piece" id="piece1">❓</div>
+                <div class="puzzle-piece" id="piece2">❓</div>
+                <div class="puzzle-piece" id="piece3">❓</div>
+            </div>
+        </div>
+
+        <div class="hint-box" id="hintBox">按「開始講嘢」或「揭開一點」</div>
+        <div class="heard-box" id="heardBox">聽到的聲音會顯示喺度...</div>
+        
+        <button class="btn-primary" id="micBtn" onclick="toggleListening()">🎤 開始講嘢回答</button>
+        
+        <div class="btn-group" style="margin-top: 10px;">
+            <button class="btn-reveal" onclick="revealPiece()">🧩 揭開一點點</button>
+            <button class="btn-hint" onclick="giveManualHint()">💡 聽提示</button>
+            <button class="btn-manual" onclick="manualPass()">👍 講得啱</button>
+        </div>
+        <button class="btn-next" onclick="nextQuestion()">➡️ 下一題</button>
+
+        <button class="btn-add" onclick="openAddModal()">➕ 新增宿舍真實相片題目</button>
+        <button class="btn-clear" onclick="clearCustomQuestions()">🗑️ 清除自訂題目</button>
+
+        <div class="status" id="statusText">狀態：準備就緒 (廣東話)</div>
+    </div>
+
+    <div id="mode2Container" style="display: none;">
+        <h2 style="margin: 5px 0 12px; font-size: 22px; color: #2c3e50;">💡 點擊圖卡表達需求</h2>
+        <div class="aac-grid">
+            <div class="aac-card" onclick="triggerAAC('我想飲水', '🥛')">
+                <div class="aac-emoji">🥛</div>
+                <div class="aac-label">飲水</div>
+            </div>
+            <div class="aac-card" onclick="triggerAAC('我想去洗手間', '🚽')">
+                <div class="aac-emoji">🚽</div>
+                <div class="aac-label">去洗手間</div>
+            </div>
+            <div class="aac-card" onclick="triggerAAC('我想食飯', '🍚')">
+                <div class="aac-emoji">🍚</div>
+                <div class="aac-label">食飯</div>
+            </div>
+            <div class="aac-card" onclick="triggerAAC('我身體唔舒服', '🤒')">
+                <div class="aac-emoji">🤒</div>
+                <div class="aac-label">唔舒服</div>
+            </div>
+        </div>
+        <div class="hint-box" id="aacSpeechBox" style="margin-top: 15px;">點擊上方圖卡發聲</div>
+    </div>
+
+    <div id="mode3Container" style="display: none;">
+        <div class="filter-container">
+            <select id="adlTaskSelect" class="filter-select" onchange="loadADLTask()">
+                <option value="brush_video">🎥 刷牙流程影片提示</option>
+                <option value="wash_video">🎥 洗手流程影片提示</option>
+            </select>
+        </div>
+
+        <h3 style="margin: 5px 0 10px; font-size: 19px; color: #2c3e50;">與宿友一同觀看影片，並提供協助</h3>
+
+        <div class="puzzle-wrapper" id="adlVideoContainer" style="height: 250px; width: 100%; max-width: 400px;">
+            <iframe id="adlVideoFrame" width="100%" height="100%" src="" title="ADL Training Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <div style="background: #e1f5fe; padding: 15px; border-radius: 16px; margin-top: 15px; border: 2px solid #0288d1;">
+            <h4 style="margin: 0 0 10px 0; color: #01579b; font-size: 17px;">前線護理員紀錄 (本次訓練評估)</h4>
+            <div class="btn-group">
+                <button class="btn-next" style="background-color: #8bc34a; flex: 1; padding: 12px; font-size: 16px;" onclick="logADLResult('獨立完成')">👍 獨立</button>
+                <button class="btn-hint" style="background-color: #ffca28; color: #333; flex: 1; padding: 12px; font-size: 16px;" onclick="logADLResult('口頭/視覺提示')">🗣️ 提示</button>
+                <button class="btn-reveal" style="background-color: #ef5350; flex: 1; padding: 12px; font-size: 16px;" onclick="logADLResult('身體協助')">🤲 協助</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mode5Container" style="display: none;">
+        <h2 style="margin: 5px 0 12px; font-size: 22px; color: #7b1fa2;">🧘 情緒與感官放鬆</h2>
+        
+        <div style="background: #f3e5f5; padding: 15px; border-radius: 16px; margin-bottom: 15px; border: 2px solid #ab47bc;">
+            <h4 style="margin: 0 0 10px 0; color: #7b1fa2; font-size: 17px;">職員觀察：宿友當前狀態</h4>
+            <div class="btn-group">
+                <button class="btn-manual" style="flex: 1; min-width: 90px; background-color: #ce93d8; padding: 12px; font-size: 16px;" onclick="triggerRelaxPlan('焦慮躁動', 'breathing')">😰 焦慮躁動</button>
+                <button class="btn-manual" style="flex: 1; min-width: 90px; background-color: #8e24aa; padding: 12px; font-size: 16px;" onclick="triggerRelaxPlan('緊張僵硬', ' breathing')">😟 緊張僵硬</button>
+                <button class="btn-manual" style="flex: 1; min-width: 90px; background-color: #ab47bc; padding: 12px; font-size: 16px;" onclick="triggerRelaxPlan('亢奮/其他', 'other')">😤 其他狀態</button>
+            </div>
+        </div>
+
+        <div id="relaxToolArea" style="display: none; background: white; padding: 20px; border-radius: 16px; border: 3px solid #ab47bc; position: relative;">
+            <h4 id="relaxToolTitle" style="margin: 0 0 10px 0; text-align: center; font-size: 19px; color: #333;"></h4>
+            
+            <div id="breathingCircle"></div>
+            
+            <div class="hint-box" id="relaxSpeechBox" style="margin-top: 15px; background-color: #f3e5f5; color: #7b1fa2;">按下方狀態選擇放鬆方案</div>
+        </div>
+    </div>
+
+    <div id="mode4Container" style="display: none;">
+        <h2 style="margin: 5px 0 10px; font-size: 22px; color: #2c3e50;">📊 院友訓練紀錄</h2>
+        <div id="logSummary" style="font-size: 16px; margin-bottom: 10px; font-weight: bold; color: #333;"></div>
+        <div style="max-height: 280px; overflow-y: auto;">
+            <table class="log-table">
+                <thead>
+                    <tr>
+                        <th>時間</th>
+                        <th>訓練項目</th>
+                        <th>結果/輔助等級</th>
+                    </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+            </table>
+        </div>
+        <div class="btn-group" style="margin-top: 15px;">
+            <button class="btn-clear" onclick="clearLogs()" style="flex: 1; font-size: 15px; padding: 10px;">🗑️ 清除當前紀錄</button>
+            <button class="btn-clear" style="background-color: #455a64; flex: 1; font-size: 15px; padding: 10px;" onclick="clearAllResidentsData()">⚠️ 清除所有宿友數據</button>
+        </div>
+    </div>
+
+    <div class="badge-popup" id="badgePopup">
+        <h2 style="margin:0; font-size: 28px; color: #f57f17;">🏅 恭喜解鎖新稱號！</h2>
+        <p id="badgePopupText" style="font-size: 22px; font-weight: bold; color: #d32f2f; margin: 10px 0;"></p>
+        <button class="btn-primary" onclick="closeBadgePopup()" style="font-size: 18px; padding: 10px 20px; width: auto;">太棒了！</button>
+    </div>
+</div>
+
+<div class="modal" id="residentModal">
+    <div class="modal-content">
+        <h3>管理宿友名單</h3>
+        <div style="max-height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 10px; border-radius: 10px; margin-bottom: 15px;" id="residentListArea">
+            </div>
+        <label>新宿友姓名：</label>
+        <input type="text" id="newResidentName" placeholder="例如：陳大文">
+        <label>新宿友 ID (如床位/房號)：</label>
+        <input type="text" id="newResidentID" placeholder="例如：BED-01">
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button style="background-color: #4CAF50; color: white; flex: 1; font-size: 17px;" onclick="addResident()">➕ 新增</button>
+            <button style="background-color: #9e9e9e; color: white; flex: 1; font-size: 17px;" onclick="closeResidentModal()">關閉</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="addModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">新增宿舍真實相片題目</h3>
+        <p style="font-size: 13px; color: #666; margin-top: 0;">注意：LocalStorage 容量有限，請勿上傳過多高畫質相片。</p>
+        <label>1. 選擇照片（拍照或相簿）：</label>
+        <input type="file" id="customImageInput" accept="image/*">
+        
+        <label>2. 正確名稱（院友需要講出的）：</label>
+        <input type="text" id="customNameInput" placeholder="例如：水杯">
+        
+        <label>3. 語意提示（功能/生活情境）：</label>
+        <input type="text" id="customSemanticInput" placeholder="例如：用嚟喝水嘅杯">
+        
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button style="background-color: #4CAF50; color: white; flex: 1; font-size: 17px;" onclick="saveCustomQuestion()">儲存題目</button>
+            <button style="background-color: #9e9e9e; color: white; flex: 1; font-size: 17px;" onclick="closeAddModal()">取消</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- (一) 基礎設置與數據 ---
+    var cantoneseVoice = null;
+    var totalStars = 0; // 全局變量，會隨著選取宿友而改變
+    var currentResidentId = 'public'; // 預設為公共模式
+
+    // 從 LocalStorage 載入宿友名單
+    var residents = JSON.parse(localStorage.getItem('rehab_residents_v2') || '[]');
+
+    // 預設題目 (Mode 1)
+    var defaultQuestions = [
+        { name: "蘋果", category: "food", level: 1, keywords: ["蘋果", "屏果", "平果"], emoji: "🍎", semantic: "一種紅色嘅水果，甜甜地嘅", phonemic: "第一個字係『ping4』（平）..." },
+        { name: "牙刷", category: "daily", level: 1, keywords: ["牙刷", "芽刷", "雅刷"], emoji: "🪥", semantic: "每日屋企刷牙用嘅工具", phonemic: "第一個字係『ngaa4』（牙）..." },
+        { name: "眼鏡", category: "daily", level: 1, keywords: ["眼鏡", "眼精"], emoji: "👓", semantic: "令我地睇嘢清楚啲嘅嘢", phonemic: "第一個字係『ngaan5』（眼）..." }
+    ];
+    
+    // 影片 ADL 連結 (Mode 3)
+    var adlVideos = {
+        brush_video: "https://www.youtube.com/embed/SshMof_zZ94?si=r7kK6y7yI9A2fB2i", // 網上刷牙歌範例
+        wash_video: "https://www.youtube.com/embed/AswF8D34G_o?si=hC7O3X2_M2W5D_C_"  // 網上洗手範例
+    };
+
+    var rawQuestions = [];
+    var activeQuestions = [];
+    var currentIndex = 0;
+    var recognition = null;
+    var isListening = false;
+    var hintLevel = 0;
+    var revealedPieces = 0;
+    var hasAnswered = false;
+    var currentGrade = 2; // 預設 Grade 2 有遮罩
+
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    // --- (二) 初始化與 TTS ---
+    window.onload = function() {
+        initTTS();
+        updateResidentSelector(); // 初始化頂部宿友下拉菜單
+        loadSavedQuestions(); // 載入題目
+        filterQuestions(); // 篩選題目
+        initSpeechRecognition(); // 初始化語音辨識
+        // 初始不累計星星，等選取宿友後才載入
+        updateStarDisplay();
+    };
+
+    function initTTS() {
+        if ('speechSynthesis' in window) {
+            var updateVoices = function() {
+                var voices = window.speechSynthesis.getVoices();
+                // 優先尋找 Google 或 Apple 的廣東話語音
+                cantoneseVoice = voices.find(function(v) {
+                    return (v.lang === 'zh-HK' || v.lang === 'yue-Hant-HK') && (v.name.includes('Google') || v.name.includes('Apple') || v.name.includes('Sin-Ji'));
+                }) || voices.find(function(v) { return v.lang === 'zh-HK' || v.lang === 'yue-Hant-HK'; });
+            };
+            updateVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = updateVoices;
+            }
+        }
+    }
+
+    function speakCantonese(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel(); // 停止之前的播放
+            var utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-HK';
+            utterance.rate = 0.85; // 稍微慢一點
+            if (cantoneseVoice) utterance.voice = cantoneseVoice;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // --- (三) 宿友數據管理核心 (加分點) ---
+
+    function saveResidentsData() {
+        localStorage.setItem('rehab_residents_v2', JSON.stringify(residents));
+    }
+
+    // 更新頂部下拉選單
+    function updateResidentSelector() {
+        var select = document.getElementById('currentResidentSelect');
+        select.innerHTML = '<option value="public">--- 公共模式 ---</option>';
+        residents.forEach(function(res) {
+            var option = document.createElement('option');
+            option.value = res.id;
+            option.text = res.name + " (" + res.id + ")";
+            if (res.id === currentResidentId) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+
+    // 切換當前宿友
+    function changeCurrentResident() {
+        currentResidentId = document.getElementById('currentResidentSelect').value;
+        
+        // 停止所有語音和動畫
+        window.speechSynthesis.cancel();
+        clearInterval(breathingInterval);
+
+        if (currentResidentId !== 'public') {
+            var res = residents.find(r => r.id === currentResidentId);
+            if (res) {
+                totalStars = res.stars || 0;
+            }
+        } else {
+            totalStars = 0; // 公共模式不顯露/累計星星
+        }
+        
+        updateStarDisplay(); // 更新星星顯示
+        
+        // 如果當前喺紀錄 Mode，重新渲染表格
+        if (document.getElementById('mode4Container').style.display === 'block') {
+            renderLogs();
+        }
+        
+        // 如果當前喺 ADL Mode，重置影片
+        if (document.getElementById('mode3Container').style.display === 'block') {
+            loadADLTask();
+        }
+        
+        // 如果喺放鬆 Mode，重置
+        if (document.getElementById('mode5Container').style.display === 'block') {
+            resetRelaxMode();
+        }
+    }
+
+    // 打開宿友管理彈窗
+    function openResidentModal() {
+        document.getElementById('residentModal').style.display = 'flex';
+        renderResidentList(); // 渲染彈窗內的列表
+    }
+
+    function closeResidentModal() {
+        document.getElementById('residentModal').style.display = 'none';
+    }
+
+    // 新增宿友
+    function addResident() {
+        var nameInput = document.getElementById('newResidentName');
+        var idInput = document.getElementById('newResidentID');
+        var name = nameInput.value.trim();
+        var id = idInput.value.trim();
+
+        if (!name || !id) return alert("請輸入姓名和 ID！");
+        if (residents.some(r => r.id === id)) return alert("此 ID 已存在！");
+
+        // 核心數據結構：ID, 姓名, 星星數, 訓練紀錄數組
+        residents.push({ name: name, id: id, stars: 0, logs: [] });
+        saveResidentsData();
+        updateResidentSelector();
+        renderResidentList();
+        nameInput.value = ''; idInput.value = '';
+    }
+
+    // 刪除個別宿友
+    function deleteResident(id) {
+        if (confirm("確定要刪除這位宿友的所有訓練紀錄嗎？")) {
+            residents = residents.filter(r => r.id !== id);
+            if (currentResidentId === id) currentResidentId = 'public';
+            saveResidentsData();
+            updateResidentSelector();
+            renderResidentList();
+            updateStarDisplay();
+        }
+    }
+
+    // 渲染彈窗內的宿友列表
+    function renderResidentList() {
+        var listArea = document.getElementById('residentListArea');
+        if (residents.length === 0) {
+            listArea.innerHTML = '<p style="color:#999; text-align:center;">暫無宿友名單</p>';
+            return;
+        }
+        var html = '<ul style="list-style:none; padding:0; margin:0;">';
+        residents.forEach(function(res) {
+            html += '<li style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #eee;">' +
+                    res.name + ' (' + res.id + ') - ⭐' + (res.stars || 0) +
+                    '<button style="background:#e91e63; color:white; border:none; padding:4px 8px; border-radius:6px; font-size:12px;" onclick="deleteResident(\''+res.id+'\')">刪除</button>' +
+                    '</li>';
+        });
+        html += '</ul>';
+        listArea.innerHTML = html;
+    }
+
+    // --- (四) 模式切換與通用UI ---
+    function switchMode(modeNum) {
+        // 隱藏所有
+        var containers = ['mode1Container', 'mode2Container', 'mode3Container', 'mode4Container', 'mode5Container'];
+        containers.forEach(c => document.getElementById(c).style.display = 'none');
+        
+        // 取消所有導覽鈕 active
+        var btns = ['btnMode1', 'btnMode2', 'btnMode3', 'btnMode4', 'btnMode5'];
+        btns.forEach(b => document.getElementById(b).classList.remove('active'));
+
+        // 顯示當前
+        document.getElementById('mode' + modeNum + 'Container').style.display = 'block';
+        document.getElementById('btnMode' + modeNum).classList.add('active');
+
+        // 進入各模式的初始化
+        window.speechSynthesis.cancel();
+        clearInterval(breathingInterval); // 切換 Mode 必停止呼吸動畫
+
+        if (modeNum === 1) loadQuestion();
+        else if (modeNum === 3) loadADLTask(); // 載入影片
+        else if (modeNum === 4) renderLogs();
+        else if (modeNum === 5) resetRelaxMode();
+    }
+
+    // 星星與稱號
+    function updateStarDisplay() {
+        // 如果是公共模式，不顯示星星欄位
+        var starBar = document.querySelector('.star-bar');
+        if (currentResidentId === 'public') {
+            starBar.style.visibility = 'hidden';
+            return;
+        }
+        starBar.style.visibility = 'visible';
+        
+        document.getElementById('starCount').innerText = totalStars;
+        var badge = "🏅 命名新手";
+        if (totalStars >= 50) badge = "🌟 命名大師";
+        else if (totalStars >= 30) badge = "🥇 命名高手";
+        else if (totalStars >= 15) badge = "🏅 命名小達人";
+
+        var oldBadge = document.getElementById('badgeTitle').innerText;
+        document.getElementById('badgeTitle').innerText = badge;
+
+        if (oldBadge !== badge && totalStars > 0) showBadgePopup(badge);
+    }
+
+    function addStars(num) {
+        if (currentResidentId === 'public') return; // 公共模式不累計
+        
+        var resIndex = residents.findIndex(r => r.id === currentResidentId);
+        if (resIndex !== -1) {
+            totalStars += num;
+            residents[resIndex].stars = totalStars;
+            saveResidentsData();
+            updateStarDisplay();
+        }
+    }
+
+    function showBadgePopup(badgeName) {
+        document.getElementById('badgePopupText').innerText = badgeName;
+        document.getElementById('badgePopup').style.display = 'block';
+        triggerConfetti();
+        speakCantonese("恭喜，解鎖稱號：" + badgeName);
+    }
+    function closeBadgePopup() { document.getElementById('badgePopup').style.display = 'none'; }
+
+    function triggerConfetti() {
+        if (typeof confetti === 'function') {
+            confetti({ particleCount: 60, spread: 60, origin: { y: 0.7 } });
+        }
+    }
+
+    // --- (五) Mode 1: 猜猜看 (認知與語音) ---
+    function loadSavedQuestions() {
+        var saved = localStorage.getItem('rehab_custom_questions_v2');
+        var customList = saved ? JSON.parse(saved) : [];
+        rawQuestions = customList.concat(defaultQuestions);
+    }
+
+    function filterQuestions() {
+        var cat = document.getElementById('categorySelect').value;
+        activeQuestions = rawQuestions.filter(q => (cat === 'all' || q.category === cat));
+        if (activeQuestions.length === 0) activeQuestions = defaultQuestions;
+        currentIndex = 0;
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (activeQuestions.length === 0) return;
+        var current = activeQuestions[currentIndex];
+
+        var imgEl = document.getElementById('displayImage');
+        var emojiEl = document.getElementById('displayEmoji');
+
+        if (current.image) {
+            imgEl.src = current.image;
+            imgEl.style.display = 'block'; emojiEl.style.display = 'none';
+        } else {
+            emojiEl.innerText = current.emoji || "❓";
+            emojiEl.style.display = 'flex'; imgEl.style.display = 'none';
+        }
+
+        resetPuzzleOverlay();
+        document.getElementById('heardBox').innerText = "聽到的聲音會顯示喺度...";
+        hintLevel = 0; hasAnswered = false;
+        try { recognition.stop(); } catch(e) {}
+    }
+
+    function changeGrade() {
+        currentGrade = parseInt(document.getElementById('gradeSelect').value);
+        resetPuzzleOverlay();
+    }
+
+    function resetPuzzleOverlay() {
+        revealedPieces = 0;
+        var overlay = document.getElementById('puzzleOverlay');
+        if (currentGrade === 1) {
+            overlay.style.display = 'none'; // 無遮罩
+            document.getElementById('hintBox').innerText = "睇下圖，講出佢係咩？";
+        } else {
+            overlay.style.display = 'grid'; // 有遮罩
+            for (var i = 0; i < 4; i++) document.getElementById('piece' + i).classList.remove('revealed');
+            document.getElementById('hintBox').innerText = "按「開始講嘢」或「揭開一點」";
+        }
+    }
+
+    function revealPiece() {
+        if (currentGrade === 1) return;
+        if (revealedPieces < 4) {
+            document.getElementById('piece' + revealedPieces).classList.add('revealed');
+            revealedPieces++;
+            document.getElementById('hintBox').innerText = (revealedPieces === 4) ? "圖片完全揭開啦！" : "揭開咗一點！再猜猜？";
+        }
+    }
+
+    function giveManualHint() {
+        if (activeQuestions.length === 0) return;
+        var current = activeQuestions[currentIndex];
+        hintLevel++;
+        revealPiece(); // 聽提示時自動揭開拼圖
+
+        if (hintLevel === 1) {
+            document.getElementById('hintBox').innerText = "提示（功能）：" + current.semantic;
+            speakCantonese(current.semantic);
+        } else if (hintLevel === 2) {
+            document.getElementById('hintBox').innerText = "提示（首字）：" + current.phonemic;
+            speakCantonese(current.phonemic);
+        } else {
+            document.getElementById('hintBox').innerText = "答案係：" + current.name;
+            speakCantonese("呢個係" + current.name);
+        }
+    }
+
+    // 語音辨識核心
+    function initSpeechRecognition() {
+        if (!SpeechRecognition) {
+            document.getElementById('statusText').innerText = "⚠️ 瀏覽器不支援廣東話辨識";
+            return;
+        }
+        recognition = new SpeechRecognition();
+        recognition.lang = 'zh-HK'; // 設定廣東話
+        recognition.continuous = false; // 講完一句自動停止
+        recognition.interimResults = true; // 顯示中間辨識結果
+
+        recognition.onstart = function() {
+            isListening = true; document.getElementById('micBtn').classList.add('mic-active');
+            document.getElementById('micBtn').innerText = "🎙️ 聽緊你講嘢...";
+        };
+
+        recognition.onresult = function(event) {
+            var transcript = '';
+            for (var i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            // 清除標點
+            var cleanText = transcript.replace(/[.,!?。，！？\s]/g, '');
+            document.getElementById('heardBox').innerText = "聽到：「" + cleanText + "」";
+
+            if (!hasAnswered && cleanText.length > 0) checkAnswer(cleanText);
+        };
+
+        recognition.onerror = function() { stopListeningState(); };
+        recognition.onend = function() { stopListeningState(); };
+    }
+
+    function stopListeningState() {
+        isListening = false;
+        var btn = document.getElementById('micBtn');
+        if (btn) { btn.classList.remove('mic-active'); btn.innerText = "🎤 開始講嘢回答"; }
+    }
+
+    function toggleListening() {
+        if (!recognition) return alert("請使用 Chrome 或 Safari。");
+        if (isListening) { try { recognition.stop(); } catch(e) {} } 
+        else { try { recognition.start(); } catch(e) {} }
+    }
+
+    function checkAnswer(userInput) {
+        var current = activeQuestions[currentIndex];
+        // 檢查關鍵字是否在輸入中
+        var isCorrect = current.keywords.some(key => userInput.indexOf(key) !== -1);
+        if (isCorrect) handleSuccess("🎉 答對咗！好厲害！", "語音辨識");
+    }
+
+    function manualPass() { handleSuccess("👍 答對咗！讚獎你！", "職員覆核"); }
+
+    function handleSuccess(msg, type) {
+        if (hasAnswered) return;
+        hasAnswered = true;
+        try { recognition.stop(); } catch(e) {}
+
+        // 揭開所有拼圖
+        for (var i = 0; i < 4; i++) document.getElementById('piece' + i).classList.add('revealed');
+        triggerConfetti();
+
+        var current = activeQuestions[currentIndex];
+        document.getElementById('hintBox').innerText = msg;
+        speakCantonese("答對咗，呢個係" + current.name);
+
+        // 分數與輔助等級連動邏輯
+        var earnedStars = 3;
+        var promptLevelText = "獨立完成";
+
+        if (hintLevel === 1) {
+            earnedStars = 2;
+            promptLevelText = "口頭/視覺提示";
+        } else if (hintLevel >= 2) {
+            earnedStars = 1;
+            promptLevelText = "多重提示/解答";
+        }
+
+        if (currentResidentId !== 'public') {
+            addStars(earnedStars);
+            // 連動評估等級存入 Log
+            saveTrainLog("命名：" + current.name, type + " (" + promptLevelText + ")", earnedStars + " 顆星 ⭐");
+        }
+        
+        setTimeout(nextQuestion, 2800);
+    }
+
+    function nextQuestion() {
+        currentIndex = (currentIndex + 1) % activeQuestions.length;
+        loadQuestion();
+    }
+
+    // 自訂題目 (存 LocalStorage，需注意容量)
+    function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+    function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+    function saveCustomQuestion() {
+        var fileInput = document.getElementById('customImageInput');
+        var nameInput = document.getElementById('customNameInput').value.trim();
+        var semanticInput = document.getElementById('customSemanticInput').value.trim();
+
+        if (!fileInput.files[0] || !nameInput) return alert("請選擇相片並輸入名稱！");
+
+        // 壓縮相片概念 (這裡簡化，直接轉 Base64)
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var newQ = {
+                name: nameInput,
+                category: "custom",
+                keywords: [nameInput],
+                image: e.target.result, // Base64 圖片數據
+                semantic: semanticInput || ("呢個係宿舍嘅" + nameInput),
+                phonemic: "第一個字係『" + nameInput.charAt(0) + "』..."
+            };
+            var saved = localStorage.getItem('rehab_custom_questions_v2');
+            var customList = saved ? JSON.parse(saved) : [];
+            customList.unshift(newQ);
+            
+            try {
+                localStorage.setItem('rehab_custom_questions_v2', JSON.stringify(customList));
+                loadSavedQuestions();
+                document.getElementById('categorySelect').value = 'custom';
+                filterQuestions();
+                closeAddModal();
+            } catch(error) {
+                alert("儲存失敗！可能是相片過大或 LocalStorage 已滿。請嘗試較小的相片。");
+                console.error(error);
+            }
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+
+    function clearCustomQuestions() {
+        if (confirm("確定要刪除所有自訂相片題目嗎？")) {
+            localStorage.removeItem('rehab_custom_questions_v2');
+            loadSavedQuestions(); filterQuestions();
+        }
+    }
+
+    // --- (六) Mode 2: AAC (需求表達) ---
+    function triggerAAC(text, emoji) {
+        document.getElementById('aacSpeechBox').innerHTML = '<span style="font-size:30px;">'+emoji+'</span> ' + text;
+        speakCantonese(text);
+        // AAC 通常不作紀錄，以減少職員負擔，面試可口頭講
+    }
+
+    // --- (七) Mode 3: ADL 訓練 (影片與打卡 - 修改核心) ---
+    function loadADLTask() {
+        var taskKey = document.getElementById('adlTaskSelect').value;
+        var iframe = document.getElementById('adlVideoFrame');
+        
+        if (adlVideos[taskKey]) {
+            iframe.src = adlVideos[taskKey];
+            // 語音引導：鼓勵宿友一齊睇
+            var taskName = document.getElementById('adlTaskSelect').options[document.getElementById('adlTaskSelect').selectedIndex].text;
+            speakCantonese("我地一齊睇片學" + taskName + "，留意步驟");
+        }
+    }
+
+    // 新增：紀錄 ADL 訓練結果 (打卡功能)
+    function logADLResult(promptLevel) {
+        if (currentResidentId === 'public') {
+            return alert("⚠️ 請在頂部先選取一位「訓練宿友」，才能紀錄訓練進度。");
+        }
+        
+        var taskSelect = document.getElementById('adlTaskSelect');
+        var taskName = taskSelect.options[taskSelect.selectedIndex].text;
+
+        // 紀錄格式：項目名稱 (輔助等級)
+        saveTrainLog("ADL影片：" + taskName, "職員評估", promptLevel);
+        
+        triggerConfetti();
+        speakCantonese("好棒！完成咗訓練");
+        alert("✅ 紀錄成功！\n宿友：" + residents.find(r=>r.id===currentResidentId).name + "\n項目：" + taskName + "\n評估：" + promptLevel);
+    }
+
+    // --- (八) Mode 5: 放鬆 (感官與情緒動畫 - 新增核心) ---
+    var breathingInterval = null;
+
+    function resetRelaxMode() {
+        document.getElementById('relaxToolArea').style.display = 'none';
+        document.getElementById('breathingCircle').style.display = 'none';
+        document.getElementById('relaxSpeechBox').innerText = "按下方狀態選擇放鬆方案";
+        window.speechSynthesis.cancel();
+        clearInterval(breathingInterval);
+    }
+
+    function triggerRelaxPlan(state, toolType) {
+        // 如果是公共模式，口頭提示需要選取宿友以作紀錄，但仍可使用工具
+        
+        document.getElementById('relaxToolArea').style.display = 'block';
+        window.speechSynthesis.cancel();
+        clearInterval(breathingInterval); // 停止舊動畫
+
+        var speechBox = document.getElementById('relaxSpeechBox');
+        var circle = document.getElementById('breathingCircle');
+        
+        if (toolType === 'breathing') {
+            document.getElementById('relaxToolTitle').innerText = "跟我呼吸 (Sensory Input)";
+            circle.style.display = 'block';
+            startBreathingAnimation(); // 啟動動態和語音
+            
+            // 紀錄情緒干預
+            if (currentResidentId !== 'public') {
+                saveTrainLog("感官放鬆 (" + state + ")", "呼吸導引", "已執行");
+            }
+        } else {
+            // 其他狀態 (面試講概念)
+            circle.style.display = 'none';
+            document.getElementById('relaxToolTitle').innerText = "OT 策略建議";
+            speechBox.innerText = "針對【" + state + "】，建議：\n1. 提供加重背心(本體感)\n2. 移步至安靜角落(減低視聽刺激)";
+            speakCantonese("職員請留意，建議提供加重背心，或移步去安靜角落");
+            
+            if (currentResidentId !== 'public') {
+                saveTrainLog("情緒應對 (" + state + ")", "策略建議", "已查閱");
+            }
+        }
+    }
+
+    // 深呼吸圓圈動畫控制邏輯
+    function startBreathingAnimation() {
+        var circle = document.getElementById('breathingCircle');
+        var speechBox = document.getElementById('relaxSpeechBox');
+        var isInhale = true; // 吸氣狀態標記
+
+        // 定義一個呼吸階段的函數
+        var breathStage = function() {
+            if (isInhale) {
+                // 吸氣：圓圈變大
+                circle.style.transform = "scale(1.8)"; 
+                speechBox.innerText = "🌬️ 吸氣 (圓圈擴大)...";
+                speakCantonese("吸氣");
+            } else {
+                // 呼氣：圓圈變回原狀
+                circle.style.transform = "scale(1)"; 
+                speechBox.innerText = "😮 呼氣 (圓圈縮小)...";
+                speakCantonese("呼氣");
+            }
+            isInhale = !isInhale; // 切換狀態
+        };
+        
+        breathStage(); // 立即開始第一次
+        // 設定迴圈，每 4.5 秒切換一次 (CSS transition 是 4s)
+        breathingInterval = setInterval(breathStage, 4500); 
+    }
+
+    // --- (九) Mode 4: 紀錄 (數據化顯示) ---
+    
+    // 核心函數：保存紀錄到特定宿友數據中
+    function saveTrainLog(itemName, method, resultText) {
+        if (currentResidentId === 'public') return; // 公共模式不紀錄
+        
+        var now = new Date();
+        var timeStr = (now.getMonth()+1) + "/" + now.getDate() + " " + now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+        
+        var newLog = { time: timeStr, item: itemName, method: method, result: resultText };
+
+        var resIndex = residents.findIndex(r => r.id === currentResidentId);
+        if (resIndex !== -1) {
+            if (!residents[resIndex].logs) residents[resIndex].logs = [];
+            // 插入到數組最前面 (新的喺上面)
+            residents[resIndex].logs.unshift(newLog);
+            
+            // 限制紀錄數量以節省空間 (例如每人只存 50 條)
+            if (residents[resIndex].logs.length > 50) {
+                residents[resIndex].logs.pop(); // 刪除舊的
+            }
+            
+            saveResidentsData(); // 保存到 LocalStorage
+        }
+    }
+
+    function renderLogs() {
+        var tbody = document.getElementById('logTableBody');
+        tbody.innerHTML = '';
+        var summaryEl = document.getElementById('logSummary');
+
+        if (currentResidentId === 'public') {
+            summaryEl.innerText = "⚠️ 請選取訓練宿友以查看個別紀錄。";
+            return;
+        }
+
+        var res = residents.find(r => r.id === currentResidentId);
+        if (!res) return;
+
+        summaryEl.innerText = "宿友：" + res.name + " ｜ 累積星星：" + (res.stars || 0) + " 顆";
+
+        var logs = res.logs || [];
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="color:#999;">暫無訓練紀錄</td></tr>';
+            return;
+        }
+
+        logs.forEach(function(log) {
+            var tr = document.createElement('tr');
+            var resColor = (log.item.includes('命名')) ? 'green' : '#0277bd'; // 不同項目不同顏色
+            tr.innerHTML = "<td>" + log.time + "</td>" +
+                           "<td style='color:"+resColor+"; font-weight:bold;'>" + log.item + "</td>" +
+                           "<td>" + log.result + " <span style='font-size:12px;color:#666;'>(" + log.method + ")</span></td>";
+            tbody.appendChild(tr);
+        });
+    }
+
+    function clearLogs() {
+        if (currentResidentId === 'public') return;
+        var resName = residents.find(r=>r.id===currentResidentId).name;
+        if (confirm("確定要清除宿友【" + resName + "】的所有訓練紀錄和星星嗎？")) {
+            var resIndex = residents.findIndex(r => r.id === currentResidentId);
+            if (resIndex !== -1) {
+                residents[resIndex].logs = [];
+                residents[resIndex].stars = 0;
+                totalStars = 0;
+                saveResidentsData();
+                updateStarDisplay();
+                renderLogs();
+            }
+        }
+    }
+
+    // 職員功能：清除 LocalStorage 所有數據
+    function clearAllResidentsData() {
+        if (confirm("⚠️ 警告：這將刪除所有宿友名單、訓練紀錄、星星和自訂相片題目！\n\n此操作無法還原，確定嗎？")) {
+            localStorage.removeItem('rehab_residents_v2');
+            localStorage.removeItem('rehab_custom_questions_v2');
+            location.reload(); // 重新載入頁面
+        }
+    }
+</script>
+
+</body>
+</html>
