@@ -499,8 +499,9 @@
             </table>
         </div>
         <div class="btn-group" style="margin-top: 15px;">
+            <button class="btn-hint" style="background-color: #0288d1; flex: 1; font-size: 15px; padding: 10px;" onclick="exportLogsToCSV()">📥 匯出 CSV 紀錄</button>
             <button class="btn-clear" onclick="clearLogs()" style="flex: 1; font-size: 15px; padding: 10px;">🗑️ 清除當前紀錄</button>
-            <button class="btn-clear" style="background-color: #455a64; flex: 1; font-size: 15px; padding: 10px;" onclick="clearAllResidentsData()">⚠️ 清除所有宿友數據</button>
+            <button class="btn-clear" style="background-color: #455a64; flex: 1; font-size: 15px; padding: 10px;" onclick="clearAllResidentsData()">⚠️ 清除所有數據</button>
         </div>
     </div>
 
@@ -549,6 +550,44 @@
 </div>
 
 <script>
+    // 新增：導出當前宿友紀錄為 CSV (支援中文字碼 BOM)
+    function exportLogsToCSV() {
+        if (currentResidentId === 'public') {
+            return alert("⚠️ 請先選取一位「訓練宿友」，才能匯出其訓練紀錄。");
+        }
+
+        var res = residents.find(r => r.id === currentResidentId);
+        if (!res || !res.logs || res.logs.length === 0) {
+            return alert("⚠️ 當前宿友暫無任何訓練紀錄可供匯出。");
+        }
+
+        // CSV 表頭
+        var csvContent = "\uFEFF"; // 加入 UTF-8 BOM 防止 Excel 開啟中文字變成亂碼
+        csvContent += "宿友姓名,宿友ID,訓練時間,訓練項目,評估結果/星星,介入方式\n";
+
+        // 逐行填入紀錄
+        res.logs.forEach(function(log) {
+            var row = [
+                '"' + res.name + '"',
+                '"' + res.id + '"',
+                '"' + log.time + '"',
+                '"' + log.item + '"',
+                '"' + log.result + '"',
+                '"' + log.method + '"'
+            ].join(",");
+            csvContent += row + "\n";
+        });
+
+        // 建立下載連結
+        var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", res.name + "_" + res.id + "_訓練紀錄_" + new Date().toISOString().slice(0,10) + ".csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
     // --- (一) 基礎設置與數據 ---
     var cantoneseVoice = null;
     var totalStars = 0; // 全局變量，會隨著選取宿友而改變
