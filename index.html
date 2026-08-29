@@ -1027,33 +1027,61 @@
 
         if (!fileInput.files[0] || !nameInput) return alert("請選擇相片並輸入名稱！");
 
-        // 壓縮相片概念 (這裡簡化，直接轉 Base64)
+        var file = fileInput.files[0];
         var reader = new FileReader();
+
         reader.onload = function(e) {
-            var newQ = {
-                name: nameInput,
-                category: "custom",
-                keywords: [nameInput],
-                image: e.target.result, // Base64 圖片數據
-                semantic: semanticInput || ("呢個係宿舍嘅" + nameInput),
-                phonemic: "第一個字係『" + nameInput.charAt(0) + "』..."
+            var img = new Image();
+            img.src = e.target.result;
+
+            img.onload = function() {
+                // 使用 Canvas 進行圖片等比例壓縮
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+
+                var maxWidth = 500; // 限制最大寬度為 500px (足夠 WebApp 顯示且容量極小)
+                var scale = maxWidth / img.width;
+                
+                if (scale < 1) {
+                    canvas.width = maxWidth;
+                    canvas.height = img.height * scale;
+                } else {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                }
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // 轉為低容量的 JPEG 格式 (壓縮品質 0.7)
+                var compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+                var newQ = {
+                    name: nameInput,
+                    category: "custom",
+                    keywords: [nameInput],
+                    image: compressedBase64, // 使用壓縮後的 Base64
+                    semantic: semanticInput || ("呢個係宿舍嘅" + nameInput),
+                    phonemic: "第一個字係『" + nameInput.charAt(0) + "』..."
+                };
+
+                var saved = localStorage.getItem('rehab_custom_questions_v2');
+                var customList = saved ? JSON.parse(saved) : [];
+                customList.unshift(newQ);
+
+                try {
+                    localStorage.setItem('rehab_custom_questions_v2', JSON.stringify(customList));
+                    loadSavedQuestions();
+                    document.getElementById('categorySelect').value = 'custom';
+                    filterQuestions();
+                    closeAddModal();
+                    alert("✅ 圖片壓縮並儲存成功！");
+                } catch (error) {
+                    alert("儲存失敗！容量仍超過限制，請嘗試刪除部分舊題目。");
+                    console.error(error);
+                }
             };
-            var saved = localStorage.getItem('rehab_custom_questions_v2');
-            var customList = saved ? JSON.parse(saved) : [];
-            customList.unshift(newQ);
-            
-            try {
-                localStorage.setItem('rehab_custom_questions_v2', JSON.stringify(customList));
-                loadSavedQuestions();
-                document.getElementById('categorySelect').value = 'custom';
-                filterQuestions();
-                closeAddModal();
-            } catch(error) {
-                alert("儲存失敗！可能是相片過大或 LocalStorage 已滿。請嘗試較小的相片。");
-                console.error(error);
-            }
         };
-        reader.readAsDataURL(fileInput.files[0]);
+        reader.readAsDataURL(file);
     }
 
     function clearCustomQuestions() {
