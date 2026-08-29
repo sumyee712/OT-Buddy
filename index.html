@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>話在心頭 (Speak My Mind) - 智障宿舍臨床輔助平台</title>
+    <title>OT-Buddy 智適樂 (DEMO 示範版) - 智障宿舍臨床輔助平台</title>
 
     <meta name="theme-color" content="#4CAF50">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -347,6 +347,10 @@
 <body>
 
 <div class="card">
+    <div style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; border-radius: 12px; padding: 6px 12px; margin-bottom: 12px; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-align: center;">
+        <span>🚀 OT-Buddy 智適樂 (DEMO 示範版)</span>
+        <span style="background: #e65100; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px;">臨床概念驗證</span>
+    </div>
     <div class="resident-selector-bar">
         <span>👤 訓練宿友：
             <select id="currentResidentSelect" onchange="changeCurrentResident()">
@@ -360,7 +364,8 @@
         <button class="mode-btn active" id="btnMode1" onclick="switchMode(1)">1. 猜猜看</button>
         <button class="mode-btn" id="btnMode2" onclick="switchMode(2)">2. AAC</button>
         <button class="mode-btn" id="btnMode3" onclick="switchMode(3)">3. ADL訓練</button>
-        <button class="mode-btn" id="btnMode5" onclick="switchMode(5)">5. 放鬆</button> <button class="mode-btn" id="btnMode4" onclick="switchMode(4)">4. 紀錄</button>
+        <button class="mode-btn" id="btnMode5" onclick="switchMode(5)">4. 放鬆</button> 
+        <button class="mode-btn" id="btnMode4" onclick="switchMode(4)">5. 紀錄</button>
     </div>
 
     <div id="mode1Container">
